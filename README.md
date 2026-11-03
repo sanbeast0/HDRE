@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Hydro-Diplomacy & Resilience Engine (HDRE / R2C Ai)
 ### Closed-Loop Transboundary Treaty Allocation to Municipal Ward Water Delivery Operating System
 
@@ -154,3 +155,6 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8000 --app-dir "backend"
 python test_api.py
 ```
 *(All endpoints, optimization routines, and closed-loop pipelines pass with 100% compliance).*
+=======
+# HDRE
+>>>>>>> ab05ca81801159288672350f899b47ab0f9d1c1b
