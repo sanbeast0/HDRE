@@ -1,0 +1,139 @@
+{
+  "type": "FeatureCollection",
+  "name": "krishna_bhima_basin",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "KRISHNA_BHIMA_01",
+      "properties": {
+        "basin_id": "KRISHNA_BHIMA_01",
+        "basin_name": "Krishna-Bhima Transboundary Basin",
+        "riparian_states": [
+          "State A (Maharashtra - Upstream)",
+          "State B (Karnataka - Downstream)"
+        ],
+        "sub_catchments": [
+          "Mula-Mutha Catchment",
+          "Ghod Catchment",
+          "Upper Bhima",
+          "Lower Bhima"
+        ],
+        "dam_nodes": [
+          {
+            "dam_id": "DAM_PANSHET",
+            "name": "Panshet Dam",
+            "lat": 18.375,
+            "lon": 73.612,
+            "capacity_tmc": 10.65,
+            "role": "Upstream Catchment Buffer (Dam Alpha)"
+          },
+          {
+            "dam_id": "DAM_VARASGAON",
+            "name": "Varasgaon Dam",
+            "lat": 18.398,
+            "lon": 73.59,
+            "capacity_tmc": 12.41,
+            "role": "Upstream Catchment Buffer (Dam Alpha)"
+          },
+          {
+            "dam_id": "DAM_KHADAKWASLA",
+            "name": "Khadakwasla Dam",
+            "lat": 18.441,
+            "lon": 73.762,
+            "capacity_tmc": 1.97,
+            "role": "Municipal Flume Intake (Dam Alpha Pool)"
+          },
+          {
+            "dam_id": "DAM_UJANI",
+            "name": "Ujani Dam",
+            "lat": 18.075,
+            "lon": 75.12,
+            "capacity_tmc": 53.57,
+            "role": "Interstate Transboundary Regulator (Dam Beta)"
+          }
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.3,
+              19.3
+            ],
+            [
+              75.5,
+              19.1
+            ],
+            [
+              77.2,
+              17.5
+            ],
+            [
+              76.8,
+              16.2
+            ],
+            [
+              75.1,
+              16.5
+            ],
+            [
+              73.8,
+              17.8
+            ],
+            [
+              73.3,
+              18.5
+            ],
+            [
+              73.3,
+              19.3
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RIVER_TRUNK_BHIMA",
+      "properties": {
+        "line_id": "BHIMA_MAIN_STEM",
+        "name": "Bhima River Trunk",
+        "type": "MainStem"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            73.55,
+            18.42
+          ],
+          [
+            73.76,
+            18.44
+          ],
+          [
+            73.85,
+            18.52
+          ],
+          [
+            74.3,
+            18.4
+          ],
+          [
+            75.12,
+            18.07
+          ],
+          [
+            76.0,
+            17.5
+          ],
+          [
+            76.8,
+            16.8
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,576 @@
+{
+  "type": "FeatureCollection",
+  "name": "pune_municipal_wards",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "WARD_01",
+      "properties": {
+        "ward_id": "WARD_01",
+        "ward_name": "Aundh - Baner",
+        "centroid_lat": 18.558,
+        "centroid_lon": 73.805,
+        "avg_elev_m": 575.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.785,
+              18.545
+            ],
+            [
+              73.825,
+              18.545
+            ],
+            [
+              73.83,
+              18.575
+            ],
+            [
+              73.79,
+              18.575
+            ],
+            [
+              73.785,
+              18.545
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_02",
+      "properties": {
+        "ward_id": "WARD_02",
+        "ward_name": "Kothrud - Bavdhan",
+        "centroid_lat": 18.508,
+        "centroid_lon": 73.805,
+        "avg_elev_m": 595.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.785,
+              18.49
+            ],
+            [
+              73.825,
+              18.49
+            ],
+            [
+              73.825,
+              18.53
+            ],
+            [
+              73.785,
+              18.53
+            ],
+            [
+              73.785,
+              18.49
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_03",
+      "properties": {
+        "ward_id": "WARD_03",
+        "ward_name": "Kasba - Vishrambaug (Medical Hub)",
+        "centroid_lat": 18.518,
+        "centroid_lon": 73.855,
+        "avg_elev_m": 560.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.845,
+              18.51
+            ],
+            [
+              73.868,
+              18.51
+            ],
+            [
+              73.868,
+              18.528
+            ],
+            [
+              73.845,
+              18.528
+            ],
+            [
+              73.845,
+              18.51
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_04",
+      "properties": {
+        "ward_id": "WARD_04",
+        "ward_name": "Bhavani Peth (Heritage Pipe Grid)",
+        "centroid_lat": 18.508,
+        "centroid_lon": 73.868,
+        "avg_elev_m": 552.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.858,
+              18.498
+            ],
+            [
+              73.88,
+              18.498
+            ],
+            [
+              73.88,
+              18.518
+            ],
+            [
+              73.858,
+              18.518
+            ],
+            [
+              73.858,
+              18.498
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_05",
+      "properties": {
+        "ward_id": "WARD_05",
+        "ward_name": "Nana Peth - Ganj Peth",
+        "centroid_lat": 18.512,
+        "centroid_lon": 73.875,
+        "avg_elev_m": 550.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.865,
+              18.502
+            ],
+            [
+              73.888,
+              18.502
+            ],
+            [
+              73.888,
+              18.522
+            ],
+            [
+              73.865,
+              18.522
+            ],
+            [
+              73.865,
+              18.502
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_06",
+      "properties": {
+        "ward_id": "WARD_06",
+        "ward_name": "Sahakar Nagar - Padmavati",
+        "centroid_lat": 18.482,
+        "centroid_lon": 73.85,
+        "avg_elev_m": 582.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.835,
+              18.47
+            ],
+            [
+              73.865,
+              18.47
+            ],
+            [
+              73.865,
+              18.495
+            ],
+            [
+              73.835,
+              18.495
+            ],
+            [
+              73.835,
+              18.47
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_07",
+      "properties": {
+        "ward_id": "WARD_07",
+        "ward_name": "Bibwewadi - Kondhwa",
+        "centroid_lat": 18.475,
+        "centroid_lon": 73.875,
+        "avg_elev_m": 590.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.86,
+              18.46
+            ],
+            [
+              73.895,
+              18.46
+            ],
+            [
+              73.895,
+              18.49
+            ],
+            [
+              73.86,
+              18.49
+            ],
+            [
+              73.86,
+              18.46
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_08",
+      "properties": {
+        "ward_id": "WARD_08",
+        "ward_name": "Hadapsar - Mundhwa (Peri-Urban)",
+        "centroid_lat": 18.505,
+        "centroid_lon": 73.925,
+        "avg_elev_m": 555.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.895,
+              18.485
+            ],
+            [
+              73.955,
+              18.485
+            ],
+            [
+              73.955,
+              18.53
+            ],
+            [
+              73.895,
+              18.53
+            ],
+            [
+              73.895,
+              18.485
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_09",
+      "properties": {
+        "ward_id": "WARD_09",
+        "ward_name": "Nagar Road - Vadgaon Sheri",
+        "centroid_lat": 18.552,
+        "centroid_lon": 73.925,
+        "avg_elev_m": 562.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.895,
+              18.535
+            ],
+            [
+              73.955,
+              18.535
+            ],
+            [
+              73.955,
+              18.575
+            ],
+            [
+              73.895,
+              18.575
+            ],
+            [
+              73.895,
+              18.535
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_10",
+      "properties": {
+        "ward_id": "WARD_10",
+        "ward_name": "Viman Nagar - Kalyani Nagar",
+        "centroid_lat": 18.555,
+        "centroid_lon": 73.895,
+        "avg_elev_m": 568.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.875,
+              18.54
+            ],
+            [
+              73.915,
+              18.54
+            ],
+            [
+              73.915,
+              18.575
+            ],
+            [
+              73.875,
+              18.575
+            ],
+            [
+              73.875,
+              18.54
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_11",
+      "properties": {
+        "ward_id": "WARD_11",
+        "ward_name": "Yerwada - Kalas - Dhanori",
+        "centroid_lat": 18.568,
+        "centroid_lon": 73.872,
+        "avg_elev_m": 564.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.85,
+              18.545
+            ],
+            [
+              73.885,
+              18.545
+            ],
+            [
+              73.885,
+              18.59
+            ],
+            [
+              73.85,
+              18.59
+            ],
+            [
+              73.85,
+              18.545
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_12",
+      "properties": {
+        "ward_id": "WARD_12",
+        "ward_name": "Ghole Road - Deccan Gymkhana",
+        "centroid_lat": 18.525,
+        "centroid_lon": 73.84,
+        "avg_elev_m": 578.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.825,
+              18.515
+            ],
+            [
+              73.85,
+              18.515
+            ],
+            [
+              73.85,
+              18.54
+            ],
+            [
+              73.825,
+              18.54
+            ],
+            [
+              73.825,
+              18.515
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_13",
+      "properties": {
+        "ward_id": "WARD_13",
+        "ward_name": "Sinhagad Road - Parvati",
+        "centroid_lat": 18.485,
+        "centroid_lon": 73.825,
+        "avg_elev_m": 586.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.805,
+              18.465
+            ],
+            [
+              73.84,
+              18.465
+            ],
+            [
+              73.84,
+              18.505
+            ],
+            [
+              73.805,
+              18.505
+            ],
+            [
+              73.805,
+              18.465
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_14",
+      "properties": {
+        "ward_id": "WARD_14",
+        "ward_name": "Shivajinagar - Model Colony",
+        "centroid_lat": 18.535,
+        "centroid_lon": 73.845,
+        "avg_elev_m": 612.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.83,
+              18.525
+            ],
+            [
+              73.86,
+              18.525
+            ],
+            [
+              73.86,
+              18.55
+            ],
+            [
+              73.83,
+              18.55
+            ],
+            [
+              73.83,
+              18.525
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "WARD_15",
+      "properties": {
+        "ward_id": "WARD_15",
+        "ward_name": "Warje - Karvenagar",
+        "centroid_lat": 18.485,
+        "centroid_lon": 73.795,
+        "avg_elev_m": 570.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.775,
+              18.47
+            ],
+            [
+              73.81,
+              18.47
+            ],
+            [
+              73.81,
+              18.5
+            ],
+            [
+              73.775,
+              18.5
+            ],
+            [
+              73.775,
+              18.47
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

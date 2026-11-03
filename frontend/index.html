@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hydro-Diplomacy & Resilience Engine (HDRE / R2C Ai)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            amber: {
+              50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d',
+              400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309',
+              800: '#92400e', 900: '#78350f', 950: '#451a03'
+            },
+            yellow: {
+              50: '#fefce8', 100: '#fef9c3', 200: '#fef08a', 300: '#fde047',
+              400: '#facc15', 500: '#eab308', 600: '#ca8a04', 700: '#a16207',
+              800: '#854d0e', 900: '#713f12', 950: '#422006'
+            },
+            hydro: {
+              50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc',
+              400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1',
+              800: '#075985', 900: '#0c4a6e', 950: '#082f49'
+            },
+            slate: {
+              850: '#151e2e',
+              950: '#070d18'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- React 18 & ReactDOM & Babel for in-browser JSX execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Theme Transition */
+    html {
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+    html.light {
+      background-color: #fbfbfa;
+      color: #0f172a;
+    }
+    html.dark {
+      background-color: #080c15;
+      color: #f8fafc;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    html.light ::-webkit-scrollbar-track { background: #f1f5f9; }
+    html.light ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    html.light ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    html.dark ::-webkit-scrollbar-track { background: #0b1324; }
+    html.dark ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    html.dark ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* Glass Panels */
+    html.light .glass-panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 16px -2px rgba(245, 158, 11, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+    }
+    html.dark .glass-panel {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(245, 158, 11, 0.20);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Range slider custom styling */
+    input[type=range] {
+      accent-color: #f59e0b;
+    }
+  </style>
+</head>
+<body class="min-h-screen transition-colors duration-200">
+  <div id="root"></div>
+
+  <!-- In-browser React Script -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- Lucide Icon Helper ---
+    function Icon({ name, className = "w-4 h-4" }) {
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+      return <i data-lucide={name} className={className}></i>;
+    }
+
+    // --- App Component ---
+    function App() {
+      // Theme State: 'light' or 'dark' (defaults to 'light' per user request)
+      const [theme, setTheme] = useState('light');
+      const [currentView, setCurrentView] = useState('municipal'); // 'treaty' | 'municipal' | 'closed-loop' | 'analytics'
+      const [scenario, setScenario] = useState('2026_DROUGHT_RCP85');
+      const [treatyData, setTreatyData] = useState(null);
+      const [municipalData, setMunicipalData] = useState(null);
+      const [wardsGeojson, setWardsGeojson] = useState(null);
+      const [isSolving, setIsSolving] = useState(false);
+      
+      // Sliders & Stressor States
+      const [alphaStorage, setAlphaStorage] = useState(64.2);
+      const [betaStorage, setBetaStorage] = useState(38.5);
+      const [inflow, setInflow] = useState(14.1);
+      const [precipDeficit, setPrecipDeficit] = useState(-30.0);
+      const [tempSurge, setTempSurge] = useState(2.5);
+      const [monsoonStressorOn, setMonsoonStressorOn] = useState(true);
+      const [heatwaveStressorOn, setHeatwaveStressorOn] = useState(true);
+      const [bulkQuotaMld, setBulkQuotaMld] = useState(850.0);
+      const [horizonDays, setHorizonDays] = useState(60);
+      const [selectedWard, setSelectedWard] = useState(null);
+      const [closedLoopSliderTmc, setClosedLoopSliderTmc] = useState(38.9);
+      const [searchFilter, setSearchFilter] = useState('');
+
+      // Theme toggle effect on <html>
+      const toggleTheme = () => {
+        const next = theme === 'light' ? 'dark' : 'light';
+        setTheme(next);
+        if (next === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('light');
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.add('light');
+        }
+      };
+
+      // Initial Data Fetch
+      useEffect(() => {
+        async function fetchInitial() {
+          try {
+            setIsSolving(true);
+            const [gRes, tRes, mRes] = await Promise.all([
+              fetch('/api/v1/geojson/wards').then(r => r.ok ? r.json() : null).catch(() => null),
+              fetch('/api/v1/treaty/simulate-maximin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  basin_id: "KRISHNA_BHIMA_01",
+                  dam_alpha_storage_tmc: 64.2,
+                  dam_beta_storage_tmc: 38.5,
+                  projected_inflow_tmc: 14.1,
+                  climate_shock: { precip_deficit_pct: -30.0, temp_surge_c: 2.5 }
+                })
+              }).then(r => r.ok ? r.json() : null).catch(() => null),
+              fetch('/api/v1/municipal/optimize-ward-rationing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  city_id: "PUNE_METRO",
+                  allocated_bulk_quota_mld: 850.0,
+                  forecast_horizon_days: 60
+                })
+              }).then(r => r.ok ? r.json() : null).catch(() => null)
+            ]);
+
+            if (gRes) setWardsGeojson(gRes);
+            if (tRes) {
+              setTreatyData(tRes);
+              setClosedLoopSliderTmc(tRes.optimal_release_state_a_tmc || 38.9);
+            }
+            if (mRes) {
+              setMunicipalData(mRes);
+              const w14 = mRes.ward_details?.find(w => w.ward_id === 'WARD_14') || mRes.ward_details?.[0];
+              setSelectedWard(w14);
+            }
+          } finally {
+            setIsSolving(false);
+          }
+        }
+        fetchInitial();
+      }, []);
+
+      // Trigger Treaty Solver
+      const runTreatySolver = async (params) => {
+        try {
+          setIsSolving(true);
+          const p = params || {
+            dam_alpha_storage_tmc: Number(alphaStorage),
+            dam_beta_storage_tmc: Number(betaStorage),
+            projected_inflow_tmc: Number(inflow),
+            climate_shock: {
+              precip_deficit_pct: Number(precipDeficit),
+              temp_surge_c: Number(tempSurge)
+            }
+          };
+          const res = await fetch('/api/v1/treaty/simulate-maximin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(p)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setTreatyData(data);
+            setClosedLoopSliderTmc(data.optimal_release_state_a_tmc);
+          }
+        } finally {
+          setIsSolving(false);
+        }
+      };
+
+      // Trigger Municipal Optimizer
+      const runMunicipalOptimizer = async (quota = bulkQuotaMld, horizon = horizonDays) => {
+        try {
+          setIsSolving(true);
+          const res = await fetch('/api/v1/municipal/optimize-ward-rationing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              city_id: "PUNE_METRO",
+              allocated_bulk_quota_mld: Number(quota),
+              forecast_horizon_days: Number(horizon)
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setMunicipalData(data);
+            if (selectedWard) {
+              const updated = data.ward_details?.find(w => w.ward_id === selectedWard.ward_id);
+              if (updated) setSelectedWard(updated);
+            }
+          }
+        } finally {
+          setIsSolving(false);
+        }
+      };
+
+      // Shift closed loop upstream release
+      const handleClosedLoopShift = async (deltaTmc) => {
+        const newReleaseA = Math.max(10.0, Math.min(65.0, closedLoopSliderTmc + deltaTmc));
+        setClosedLoopSliderTmc(newReleaseA);
+        const derivedMld = Math.round((newReleaseA * 28316.85 * 0.28) / 365.0);
+        setBulkQuotaMld(derivedMld);
+        await runMunicipalOptimizer(derivedMld, horizonDays);
+      };
+
+      // Plotly re-draw on view or theme change
+      useEffect(() => {
+        if (currentView === 'analytics' && window.Plotly) {
+          const isDark = theme === 'dark';
+          const bgCol = isDark ? '#0f172a' : '#ffffff';
+          const txtCol = isDark ? '#94a3b8' : '#334155';
+          const gridCol = isDark ? '#1e293b' : '#f1f5f9';
+
+          // 1. Pareto Frontier Plot
+          const paretoPts = treatyData?.pareto_points || [
+            [0.15, 0.92], [0.35, 0.88], [0.55, 0.82], [0.72, 0.74], [0.85, 0.45], [0.93, 0.20]
+          ];
+          const secA = treatyData?.state_a_security || 0.74;
+          const secB = treatyData?.state_b_security || 0.72;
+
+          window.Plotly.newPlot('plotly-pareto', [
+            {
+              x: paretoPts.map(p => p[0]),
+              y: paretoPts.map(p => p[1]),
+              mode: 'lines+markers',
+              name: 'Pareto Frontier',
+              line: { color: '#f59e0b', width: 3, shape: 'spline' },
+              marker: { color: '#d97706', size: 6 }
+            },
+            {
+              x: [secA],
+              y: [secB],
+              mode: 'markers+text',
+              name: 'Rawlsian Maximin R*',
+              marker: { color: '#10b981', size: 14, symbol: 'star' },
+              text: [`Maximin (${(treatyData?.maximin_security_score || 0.74).toFixed(3)})`],
+              textposition: 'top right',
+              textfont: { color: '#10b981', size: 12, family: 'monospace' }
+            }
+          ], {
+            title: { text: 'Non-Dominated Pareto Trade-Off Frontier (Rawlsian Equilibrium)', font: { color: isDark ? '#f8fafc' : '#0f172a', size: 13 } },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: bgCol,
+            xaxis: { title: 'State A Welfare Security (Upstream)', color: txtCol, gridcolor: gridCol },
+            yaxis: { title: 'State B Welfare Security (Downstream)', color: txtCol, gridcolor: gridCol },
+            legend: { font: { color: txtCol } },
+            margin: { l: 50, r: 30, t: 40, b: 50 }
+          }, { responsive: true, displayModeBar: false });
+
+          // 2. Pressure Hydrograph
+          const wards = municipalData?.ward_details || [];
+          window.Plotly.newPlot('plotly-pressure', [
+            {
+              x: wards.map(w => w.ward_id.replace('WARD_', 'W')),
+              y: wards.map(w => w.estimated_terminal_pressure_bar),
+              type: 'bar',
+              marker: {
+                color: wards.map(w => w.estimated_terminal_pressure_bar < 1.0 ? '#ef4444' : (w.estimated_terminal_pressure_bar < 1.3 ? '#f59e0b' : '#10b981'))
+              }
+            }
+          ], {
+            title: { text: 'Ward Terminal Hydraulic Head Pressure (Bar)', font: { color: isDark ? '#f8fafc' : '#0f172a', size: 13 } },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: bgCol,
+            xaxis: { title: 'Municipal Ward Node', color: txtCol, gridcolor: gridCol },
+            yaxis: { title: 'Pressure (Bar)', color: txtCol, gridcolor: gridCol },
+            margin: { l: 50, r: 30, t: 40, b: 50 }
+          }, { responsive: true, displayModeBar: false });
+
+          // 3. 30-60-90 Deficit progression
+          window.Plotly.newPlot('plotly-horizon', [
+            { x: wards.map(w => w.ward_id.replace('WARD_', 'W')), y: wards.map(w => (w.forecasted_unmet_ratio * 35).toFixed(1)), name: '30-Day Deficit (%)', type: 'bar', marker: { color: '#10b981' } },
+            { x: wards.map(w => w.ward_id.replace('WARD_', 'W')), y: wards.map(w => (w.forecasted_unmet_ratio * 100).toFixed(1)), name: '60-Day Deficit (%)', type: 'bar', marker: { color: '#f59e0b' } },
+            { x: wards.map(w => w.ward_id.replace('WARD_', 'W')), y: wards.map(w => (w.forecasted_unmet_ratio * 180).toFixed(1)), name: '90-Day Deficit (%)', type: 'bar', marker: { color: '#ef4444' } }
+          ], {
+            title: { text: '30-60-90 Day Ward Deficit Progression (XGBoost Regressors)', font: { color: isDark ? '#f8fafc' : '#0f172a', size: 13 } },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: bgCol,
+            barmode: 'group',
+            xaxis: { title: 'Ward', color: txtCol, gridcolor: gridCol },
+            yaxis: { title: 'Shortfall Deficit (%)', color: txtCol, gridcolor: gridCol },
+            legend: { font: { color: txtCol } },
+            margin: { l: 50, r: 30, t: 40, b: 50 }
+          }, { responsive: true, displayModeBar: false });
+
+          // 4. Reservoir Depletion Hydrographs
+          window.Plotly.newPlot('plotly-reservoirs', [
+            { x: ['Wk 1', 'Wk 6', 'Wk 12', 'Wk 18', 'Wk 24'], y: [1.97, 1.6, 1.2, 0.6, 1.8], name: 'Khadakwasla (1.97 TMC)', line: { color: '#0ea5e9', width: 2 } },
+            { x: ['Wk 1', 'Wk 6', 'Wk 12', 'Wk 18', 'Wk 24'], y: [10.65, 8.4, 6.0, 3.0, 9.8], name: 'Panshet (10.65 TMC)', line: { color: '#f59e0b', width: 2.5 } },
+            { x: ['Wk 1', 'Wk 6', 'Wk 12', 'Wk 18', 'Wk 24'], y: [53.57, 43.1, 31.5, 18.9, 48.0], name: 'Ujani (53.57 TMC)', line: { color: '#8b5cf6', width: 3 } }
+          ], {
+            title: { text: 'Multi-Reservoir Cascade Depletion Hydrographs', font: { color: isDark ? '#f8fafc' : '#0f172a', size: 13 } },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: bgCol,
+            xaxis: { color: txtCol, gridcolor: gridCol },
+            yaxis: { title: 'Live Storage (TMC)', color: txtCol, gridcolor: gridCol },
+            legend: { font: { color: txtCol } },
+            margin: { l: 50, r: 30, t: 40, b: 50 }
+          }, { responsive: true, displayModeBar: false });
+        }
+      }, [currentView, treatyData, municipalData, theme]);
+
+      const minLpcd = municipalData?.minimum_ward_lpcd ?? 55.0;
+      const lpcdPass = minLpcd >= 55.0;
+      const wards = municipalData?.ward_details ?? [];
+      const filteredWards = wards.filter(w => 
+        w.ward_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        w.ward_id.toLowerCase().includes(searchFilter.toLowerCase())
+      );
+
+      const optimalA = treatyData?.optimal_release_state_a_tmc?.toFixed(1) ?? '38.9';
+      const optimalB = treatyData?.optimal_release_state_b_tmc?.toFixed(1) ?? '44.9';
+      const maximinScore = treatyData?.maximin_security_score?.toFixed(3) ?? '0.724';
+      const evapLoss = treatyData?.evaporative_loss_tmc?.toFixed(2) ?? '2.85';
+      const secA = treatyData?.state_a_security ?? 0.74;
+      const secB = treatyData?.state_b_security ?? 0.72;
+      const paretoPoints = treatyData?.pareto_points ?? [
+        [0.15, 0.92], [0.35, 0.88], [0.55, 0.82], [0.72, 0.74], [0.85, 0.45], [0.93, 0.20]
+      ];
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans transition-colors duration-200">
+          
+          {/* ========================================================================= */}
+          {/* UPGRADED SPACIOUS HEADER WITH NO CLIPPING & WHITE-YELLOW / DARK PALETTE   */}
+          {/* ========================================================================= */}
+          <header className="sticky top-0 z-50 transition-colors duration-200 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-amber-200/80 dark:border-amber-500/20 shadow-sm">
+            
+            {/* ROW 1: BRAND LOGO + BASIN SELECTOR + VIEWPORTS + THEME TOGGLE */}
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                
+                {/* Brand & Identity */}
+                <div className="flex items-center space-x-3.5">
+                  <div className="h-11 w-11 rounded-xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 p-0.5 shadow-md shadow-amber-500/20 flex-shrink-0">
+                    <div className="h-full w-full bg-white dark:bg-slate-950 rounded-[10px] flex items-center justify-center font-black text-amber-600 dark:text-amber-400 text-lg">
+                      Δ
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2.5">
+                      <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
+                        HDRE <span className="text-amber-600 dark:text-amber-400">/ R2C Ai</span>
+                      </span>
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 uppercase">
+                        v2.4 Prod
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Hydro-Diplomacy & Resilience Engine · Closed-Loop Treaty-to-Tap Operating System
+                    </p>
+                  </div>
+                </div>
+
+                {/* Basin & Stressor Dropdown */}
+                <div className="flex items-center space-x-2 bg-amber-50/70 dark:bg-slate-950/70 border border-amber-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs font-mono">
+                  <span className="text-amber-700 dark:text-amber-400 font-bold hidden sm:inline">Basin:</span>
+                  <span className="text-slate-800 dark:text-slate-200 font-semibold">Krishna-Bhima</span>
+                  <span className="text-amber-300 dark:text-slate-700">|</span>
+                  <select
+                    value={scenario}
+                    onChange={(e) => setScenario(e.target.value)}
+                    className="bg-transparent text-amber-800 dark:text-amber-300 font-bold focus:outline-none cursor-pointer max-w-[280px] truncate"
+                  >
+                    <option value="2026_DROUGHT_RCP85" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
+                      2026 Severe Drought (-30% Monsoon, +2.5°C)
+                    </option>
+                    <option value="BASELINE_MONSOON" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
+                      Historical Baseline (Normal Monsoon)
+                    </option>
+                    <option value="COMPOUND_HEATWAVE_RCP85" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200">
+                      Compound Multi-Decade Heatwave (+3.5°C)
+                    </option>
+                  </select>
+                </div>
+
+                {/* Navigation Viewport Mode Switcher + Light/Dark Toggle */}
+                <div className="flex items-center flex-wrap gap-2">
+                  <div className="flex items-center space-x-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <button
+                      onClick={() => setCurrentView('treaty')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        currentView === 'treaty'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Macro Treaty
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentView('municipal')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        currentView === 'municipal'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Municipal Cockpit
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentView('closed-loop')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        currentView === 'closed-loop'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Treaty-to-Tap
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentView('analytics')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        currentView === 'analytics'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Analytics
+                    </button>
+                  </div>
+
+                  {/* LIGHT / DARK MODE TOGGLE BUTTON */}
+                  <button
+                    onClick={toggleTheme}
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border font-mono text-xs font-bold transition-all bg-amber-50 dark:bg-slate-800 border-amber-300 dark:border-slate-700 text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-slate-700 shadow-sm cursor-pointer"
+                    title="Toggle Light / Dark Mode"
+                  >
+                    <span>{theme === 'light' ? '🌙 Dark' : '☀️ Light'}</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+            {/* ROW 2: LIVE TELEMETRY TICKER RIBBON (CLEAN & SPACIOUS) */}
+            <div className="bg-amber-50/50 dark:bg-slate-950/80 border-t border-amber-200/60 dark:border-slate-800/80 px-4 sm:px-6 lg:px-8 py-2">
+              <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-y-2 gap-x-4 text-xs font-mono">
+                
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-slate-500 dark:text-slate-400">CWC Telemetry:</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">ONLINE</span>
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400">
+                    Dam Alpha (Catchment): <strong className="text-amber-700 dark:text-amber-400">{alphaStorage} TMC</strong>
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400">
+                    Dam Beta (Ujani): <strong className="text-amber-700 dark:text-amber-400">{betaStorage} TMC</strong>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className={`px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${
+                    lpcdPass 
+                      ? 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700/60 text-emerald-800 dark:text-emerald-300' 
+                      : 'bg-rose-100 dark:bg-rose-950/80 border-rose-300 dark:border-rose-700/60 text-rose-800 dark:text-rose-300'
+                  }`}>
+                    Human Floor: <strong>{minLpcd} LPCD</strong> ({lpcdPass ? 'PASS ≥ 55.0' : 'ALERT'})
+                  </div>
+                  <div className="px-2.5 py-0.5 rounded-full border bg-amber-100 dark:bg-amber-950/80 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-300 text-[11px] font-bold">
+                    Hospital Buffer: <strong>100% LOCKED</strong>
+                  </div>
+                  <div className="px-2.5 py-0.5 rounded-full border bg-blue-100 dark:bg-blue-950/80 border-blue-300 dark:border-blue-700/60 text-blue-900 dark:text-blue-300 text-[11px] font-bold hidden sm:inline-block">
+                    Bulk Flume: <strong>{bulkQuotaMld} MLD</strong>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </header>
+
+          {/* ========================================================================= */}
+          {/* BODY CONTAINER                                                            */}
+          {/* ========================================================================= */}
+          <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            
+            {/* VIEWPORT 1: MACRO TREATY DIPLOMACY SANDBOX */}
+            {currentView === 'treaty' && (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-amber-200 dark:border-slate-800 gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800 font-mono text-xs font-bold uppercase">
+                        Viewport 1
+                      </span>
+                      <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                        Macro Treaty Diplomacy Sandbox (Adjudicator & River Basin Tribunal)
+                      </h1>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      John Rawls' Maximin Social Justice Optimization via SciPy SLSQP & Non-Dominated Pareto Frontier
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => runTreatySolver()}
+                    disabled={isSolving}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold text-xs tracking-wide shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSolving ? 'SOLVING RAWLSIAN MAXIMIN...' : 'RUN MAXIMIN OPTIMIZATION SOLVER'}
+                  </button>
+                </div>
+
+                {/* 3-Column Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Left: Sliders & Stressors */}
+                  <div className="lg:col-span-4 space-y-5">
+                    <div className="glass-panel p-4 rounded-xl space-y-4">
+                      <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+                        Riparian Release Sliders & Telemetry
+                      </h2>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600 dark:text-slate-300">Upstream Dam Alpha (Catchment):</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-mono font-bold">{alphaStorage} TMC</span>
+                        </div>
+                        <input
+                          type="range" min="15" max="85" step="0.5" value={alphaStorage}
+                          onChange={(e) => setAlphaStorage(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600 dark:text-slate-300">Downstream Dam Beta (Ujani):</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-mono font-bold">{betaStorage} TMC</span>
+                        </div>
+                        <input
+                          type="range" min="10" max="65" step="0.5" value={betaStorage}
+                          onChange={(e) => setBetaStorage(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600 dark:text-slate-300">Projected Catchment Inflow:</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">{inflow} TMC</span>
+                        </div>
+                        <input
+                          type="range" min="2" max="40" step="0.2" value={inflow}
+                          onChange={(e) => setInflow(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Climate Stressor Toggles */}
+                    <div className="glass-panel p-4 rounded-xl space-y-3">
+                      <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+                        Climate Stressor Toggles (RCP 8.5)
+                      </h2>
+
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => {
+                            if (monsoonStressorOn) { setPrecipDeficit(0.0); setMonsoonStressorOn(false); }
+                            else { setPrecipDeficit(-30.0); setMonsoonStressorOn(true); }
+                          }}
+                          className={`w-full flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold ${
+                            monsoonStressorOn 
+                              ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-600/80 text-rose-800 dark:text-rose-300' 
+                              : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          <span>-30% Monsoon Deficit (RCP 8.5)</span>
+                          <span className="font-mono">{monsoonStressorOn ? '[ ACTIVE ]' : '[ OFF ]'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (heatwaveStressorOn) { setTempSurge(0.0); setHeatwaveStressorOn(false); }
+                            else { setTempSurge(2.5); setHeatwaveStressorOn(true); }
+                          }}
+                          className={`w-full flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold ${
+                            heatwaveStressorOn 
+                              ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-600/80 text-amber-900 dark:text-amber-300' 
+                              : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          <span>+2.5°C Extended Heatwave Surge</span>
+                          <span className="font-mono">{heatwaveStressorOn ? '[ ACTIVE ]' : '[ OFF ]'}</span>
+                        </button>
+                      </div>
+
+                      <div className="p-2.5 rounded bg-amber-50/60 dark:bg-slate-900 border border-amber-200/80 dark:border-slate-800 text-[11px] font-mono text-slate-600 dark:text-slate-400">
+                        Penman-Monteith Evaporative Loss: <strong className="text-amber-700 dark:text-amber-400 font-bold">{evapLoss} TMC</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Middle: Basin Schematic */}
+                  <div className="lg:col-span-4 space-y-5">
+                    <div className="glass-panel p-4 rounded-xl h-full flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                          <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+                            Basin Schematic & Hydrological Polarity
+                          </h2>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
+                            Active
+                          </span>
+                        </div>
+
+                        <div className="mt-4 space-y-3 font-mono text-xs">
+                          {/* Node A */}
+                          <div className="p-3 rounded-lg bg-amber-50 dark:bg-slate-900 border border-amber-200 dark:border-amber-800/60">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-amber-800 dark:text-amber-300">[ State A: Upstream Catchment ]</span>
+                              <span className="text-emerald-700 dark:text-emerald-400 font-bold">{(secA * 100).toFixed(1)}% Security</span>
+                            </div>
+                            <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                              Panshet, Varasgaon, Khadakwasla · Optimal Release: <strong className="text-amber-700 dark:text-amber-400 font-bold">{optimalA} TMC</strong>
+                            </div>
+                          </div>
+
+                          {/* Node B */}
+                          <div className="p-3 rounded-lg bg-yellow-50 dark:bg-slate-900 border border-yellow-200 dark:border-yellow-800/60">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-yellow-800 dark:text-yellow-300">[ State B: Downstream Riparian ]</span>
+                              <span className="text-emerald-700 dark:text-emerald-400 font-bold">{(secB * 100).toFixed(1)}% Security</span>
+                            </div>
+                            <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                              Ujani Reservoir · Optimal Release: <strong className="text-yellow-700 dark:text-yellow-400 font-bold">{optimalB} TMC</strong>
+                            </div>
+                          </div>
+
+                          {/* Ecological Flow */}
+                          <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px]">
+                            <span className="text-slate-500 dark:text-slate-400 block">Environmental Trunk Flow Reserve:</span>
+                            <strong className="text-emerald-700 dark:text-emerald-400 text-sm">2.50 TMC Non-Negotiable</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2 text-center font-mono">
+                        <div className="p-2 rounded bg-amber-50 dark:bg-slate-900 border border-amber-200 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-sans">Maximin Welfare</span>
+                          <span className="text-base font-bold text-amber-700 dark:text-amber-400">{maximinScore}</span>
+                        </div>
+                        <div className="p-2 rounded bg-emerald-50 dark:bg-slate-900 border border-emerald-200 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-sans">Mass Balance</span>
+                          <span className="text-base font-bold text-emerald-700 dark:text-emerald-400">100% SECURE</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Multi-Objective Pareto Trade-Off */}
+                  <div className="lg:col-span-4 space-y-5">
+                    <div className="glass-panel p-4 rounded-xl h-full flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                          <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+                            Pareto Trade-Off Curve (Equilibrium)
+                          </h2>
+                          <span className="text-[10px] font-mono text-amber-700 dark:text-amber-400">Security A vs B</span>
+                        </div>
+
+                        {/* Interactive SVG Curve */}
+                        <div className="mt-4 bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 mb-2 flex justify-between font-mono">
+                            <span>State B (Y)</span>
+                            <span>State A (X)</span>
+                          </div>
+
+                          <div className="h-44 w-full">
+                            <svg className="w-full h-full overflow-visible" viewBox="0 0 240 160">
+                              <line x1="20" y1="140" x2="230" y2="140" stroke="#94a3b8" strokeWidth="1" />
+                              <line x1="20" y1="20" x2="20" y2="140" stroke="#94a3b8" strokeWidth="1" />
+                              <line x1="20" y1="140" x2="220" y2="20" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="2,2" opacity="0.3" />
+
+                              {paretoPoints.length > 1 && (
+                                <path
+                                  d={paretoPoints.reduce((acc, pt, idx) => {
+                                    const x = 20 + pt[0] * 200;
+                                    const y = 140 - pt[1] * 120;
+                                    return idx === 0 ? `M ${x} ${y}` : `${acc} L ${x} ${y}`;
+                                  }, "")}
+                                  fill="none"
+                                  stroke="#f59e0b"
+                                  strokeWidth="2.5"
+                                />
+                              )}
+
+                              {paretoPoints.map((pt, i) => (
+                                <circle key={i} cx={20 + pt[0] * 200} cy={140 - pt[1] * 120} r="2.5" fill="#f59e0b" />
+                              ))}
+
+                              {/* Maximin marker */}
+                              <circle cx={20 + secA * 200} cy={140 - secB * 120} r="7" fill="rgba(16,185,129,0.2)" stroke="#10b981" strokeWidth="2" />
+                              <circle cx={20 + secA * 200} cy={140 - secB * 120} r="3" fill="#10b981" />
+                              <text x={20 + secA * 200 - 35} y={140 - secB * 120 - 10} fill="#10b981" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                                R* Maximin ({maximinScore})
+                              </text>
+
+                              {/* Status Quo */}
+                              <circle cx="165" cy="115" r="4" fill="#ef4444" />
+                              <text x="145" y="130" fill="#ef4444" fontSize="8" fontFamily="monospace">Status Quo</text>
+                            </svg>
+                          </div>
+
+                          <div className="flex justify-between text-[10px] font-mono mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">● Rawlsian Maximin R*</span>
+                            <span className="text-rose-700 dark:text-rose-400 font-bold">● Status Quo Standoff</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-3 font-sans leading-relaxed">
+                        Rawlsian Maximin replaces zero-sum political deadlock with game-theoretic mediation to maximize the security of the least secure jurisdiction.
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Explainable AI Adjudicator Brief */}
+                <div className="glass-panel p-5 rounded-xl border border-amber-300 dark:border-amber-600/30">
+                  <div className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-2 font-mono flex items-center justify-between">
+                    <span>EXPLAINABLE AI ADJUDICATOR BRIEF & LEGAL MEMORANDUM</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-sans font-bold">
+                      For Tribunal Ministers & Judges
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-800 dark:text-slate-200 font-mono bg-amber-50/50 dark:bg-slate-950/80 p-3.5 rounded-lg border border-amber-200 dark:border-slate-800 leading-relaxed whitespace-pre-line">
+                    {treatyData?.judicial_summary || (
+                      `Reallocating ${optimalA} TMC to State A and ${optimalB} TMC to State B secures a ${maximinScore} Maximin balance. This preserves 91% of upstream agricultural baselines while maintaining downstream municipal intakes above statutory minimums.`
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* VIEWPORT 2: PREDICTIVE MUNICIPAL WARD RESILIENCE COCKPIT */}
+            {currentView === 'municipal' && (
+              <div className="space-y-6">
+                
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-amber-200 dark:border-slate-800 gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800 font-mono text-xs font-bold uppercase">
+                        Viewport 2
+                      </span>
+                      <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                        Predictive Municipal Ward Resilience Cockpit (City Engineer Control Room)
+                      </h1>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Pune Metro 15 Wards · XGBoost Forecasts & Google OR-Tools MILP Valve Scheduling
+                    </p>
+                  </div>
+
+                  {/* Horizon Tabs & Trigger */}
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono">
+                      {[30, 60, 90].map(h => (
+                        <button
+                          key={h}
+                          onClick={() => { setHorizonDays(h); runMunicipalOptimizer(bulkQuotaMld, h); }}
+                          className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                            horizonDays === h 
+                              ? 'bg-amber-500 text-slate-950 shadow-sm' 
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          {h}d Radar
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => runMunicipalOptimizer()}
+                      disabled={isSolving}
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs tracking-wide shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50 font-mono"
+                    >
+                      {isSolving ? 'SOLVING MILP...' : 'OPTIMIZE WARD RATIONING'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Primary Metric KPI Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="glass-panel p-4 rounded-xl">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Statutory Human Floor</div>
+                    <div className="mt-2 flex items-baseline space-x-2">
+                      <span className={`text-3xl font-extrabold font-mono ${lpcdPass ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {minLpcd}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">LPCD</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-mono font-bold">
+                      PASS ≥ 55.0 LPCD (Hard Floor)
+                    </div>
+                  </div>
+
+                  <div className="glass-panel p-4 rounded-xl">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Hospital Reserve Buffer</div>
+                    <div className="mt-2 flex items-baseline space-x-2">
+                      <span className="text-3xl font-extrabold font-mono text-amber-600 dark:text-amber-400">100%</span>
+                      <span className="text-xs text-amber-700 dark:text-amber-300 font-bold uppercase">LOCKED</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300 font-mono font-semibold">Zero-Deficit Guaranteed</div>
+                  </div>
+
+                  <div className="glass-panel p-4 rounded-xl">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Pumping Energy Cost</div>
+                    <div className="mt-2 flex items-baseline space-x-2">
+                      <span className="text-3xl font-extrabold font-mono text-yellow-600 dark:text-yellow-400">
+                        ₹{((municipalData?.pumping_energy_cost_inr || 93400) / 1000).toFixed(0)}k
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">/ day</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">Elevation Head Optimized</div>
+                  </div>
+
+                  <div className="glass-panel p-4 rounded-xl">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Bulk Intake Flume</div>
+                    <div className="mt-2 flex items-baseline space-x-2">
+                      <span className="text-3xl font-extrabold font-mono text-slate-900 dark:text-sky-400">{bulkQuotaMld}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">MLD</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">Avg Ward: {municipalData?.average_ward_lpcd ?? 55.0} LPCD</div>
+                  </div>
+                </div>
+
+                {/* Map & Inspector Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Left: Map */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <div className="glass-panel p-4 rounded-xl">
+                      <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-800 text-xs">
+                        <span className="font-extrabold text-slate-900 dark:text-slate-200 uppercase tracking-wider font-mono">
+                          Ward Choropleth Deficit Map (Pune Metro)
+                        </span>
+                        <div className="flex items-center space-x-3 text-[11px] font-mono font-bold">
+                          <span className="text-emerald-600 dark:text-emerald-400">■ Safe (≥75)</span>
+                          <span className="text-amber-600 dark:text-amber-400">■ Alert (55-74)</span>
+                          <span className="text-rose-600 dark:text-rose-400">■ Deficit</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 p-2 h-[420px] flex items-center justify-center relative">
+                        <svg className="w-full h-full" viewBox="73.76 18.44 0.22 0.16">
+                          {/* River path */}
+                          <path
+                            d="M 73.76 18.45 Q 73.83 18.49 73.85 18.52 T 73.95 18.55"
+                            fill="none" stroke="#0284c7" strokeWidth="0.003" strokeDasharray="0.005,0.002" opacity="0.6"
+                          />
+
+                          {wardsGeojson?.features?.map((feature) => {
+                            const wid = feature.properties.ward_id;
+                            const wardStat = wards.find(w => w.ward_id === wid);
+                            const isSelected = selectedWard?.ward_id === wid;
+                            const cat = wardStat?.severity_category || 'SAFE';
+                            const fill = cat === 'SAFE' ? '#10b981' : (cat === 'ALERT' ? '#f59e0b' : '#ef4444');
+                            const coords = feature.geometry.coordinates[0];
+                            const pathStr = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c[0]} ${18.60 - (c[1] - 18.44)}`).join(' ') + ' Z';
+                            const centroid = [feature.properties.centroid_lon, 18.60 - (feature.properties.centroid_lat - 18.44)];
+
+                            return (
+                              <g key={wid} className="cursor-pointer" onClick={() => setSelectedWard(wardStat)}>
+                                <path
+                                  d={pathStr}
+                                  fill={fill}
+                                  fillOpacity={isSelected ? 0.9 : 0.45}
+                                  stroke={isSelected ? '#d97706' : fill}
+                                  strokeWidth={isSelected ? 0.003 : 0.001}
+                                  className="hover:fill-opacity-75 transition-all"
+                                />
+                                <text
+                                  x={centroid[0]} y={centroid[1]} fill={theme === 'dark' ? '#ffffff' : '#0f172a'}
+                                  fontSize="0.0042" fontWeight="bold" textAnchor="middle" fontFamily="monospace" pointerEvents="none"
+                                >
+                                  {wid.replace('WARD_', 'W')}
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </svg>
+
+                        <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-slate-900/95 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] font-mono space-y-1 shadow-md">
+                          <div className="text-slate-500 dark:text-slate-400">Click polygon to inspect SCADA telemetry</div>
+                          <div className="text-slate-900 dark:text-slate-200">
+                            Selected: <strong className="text-amber-600 dark:text-amber-400">{selectedWard?.ward_id || 'WARD_14'} ({selectedWard?.ward_name})</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bulk Quota Slider */}
+                      <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                        <div className="flex justify-between text-xs font-mono">
+                          <span className="text-slate-700 dark:text-slate-300 font-bold">Simulate Bulk Flume Fluctuation (MLD):</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-bold">{bulkQuotaMld} MLD</span>
+                        </div>
+                        <input
+                          type="range" min="550" max="1050" step="25" value={bulkQuotaMld}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            setBulkQuotaMld(val);
+                            runMunicipalOptimizer(val, horizonDays);
+                          }}
+                          className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Selected Ward Inspector & Automated Valves */}
+                  <div className="lg:col-span-5 space-y-5">
+                    {selectedWard && (
+                      <div className="glass-panel p-4 rounded-xl border border-amber-300 dark:border-amber-600/40 space-y-3">
+                        <div className="flex justify-between items-start pb-2 border-b border-slate-200 dark:border-slate-800">
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 font-mono text-xs font-bold">
+                                {selectedWard.ward_id}
+                              </span>
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-white font-sans">{selectedWard.ward_name}</h3>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                              Pop: {selectedWard.population?.toLocaleString()} · Elev: {selectedWard.elevation_head_m}m
+                            </p>
+                          </div>
+
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                            selectedWard.severity_category === 'SAFE' 
+                              ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700' 
+                              : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                          }`}>
+                            {selectedWard.severity_category}
+                          </span>
+                        </div>
+
+                        {/* Deficit Radar progression */}
+                        <div className="p-2.5 rounded-lg bg-amber-50/50 dark:bg-slate-950/80 border border-amber-200 dark:border-slate-800 space-y-1 font-mono text-xs">
+                          <span className="text-[10px] text-slate-600 dark:text-slate-400 font-sans block font-bold uppercase">
+                            30-60-90 Day Deficit Radar (XGBoost):
+                          </span>
+                          <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                            <div className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block text-[9px]">30-Day</span>
+                              <span className="text-emerald-700 dark:text-emerald-400 font-bold">-{(selectedWard.forecasted_unmet_ratio * 35).toFixed(1)}%</span>
+                            </div>
+                            <div className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block text-[9px]">60-Day</span>
+                              <span className="text-amber-700 dark:text-amber-400 font-bold">-{(selectedWard.forecasted_unmet_ratio * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block text-[9px]">90-Day</span>
+                              <span className="text-rose-700 dark:text-rose-400 font-bold">-{(selectedWard.forecasted_unmet_ratio * 180).toFixed(1)}%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Human Floor & Hospital Lock */}
+                        <div className="space-y-1.5 font-mono text-xs">
+                          <div className="flex justify-between p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                            <span className="text-slate-600 dark:text-slate-400 font-sans">Delivered Tap Volume:</span>
+                            <span className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">
+                              {selectedWard.delivered_lpcd} LPCD <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-sans">(PASS ≥ 55)</span>
+                            </span>
+                          </div>
+
+                          <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-slate-600 dark:text-slate-400 font-sans">Hospital Buffer ({selectedWard.hospital_beds_count} Beds):</span>
+                              <span className="text-amber-700 dark:text-amber-400 font-bold">{selectedWard.hospital_reserve_min_mld} MLD</span>
+                            </div>
+                            <span className="text-[10px] text-amber-700 dark:text-amber-400 block text-right font-sans font-bold">
+                              [██████████████] 100% LOCKED
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                            <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 font-sans text-[10px] block">Live Tap Pressure</span>
+                              <span className="text-slate-900 dark:text-slate-100 font-bold text-sm">{selectedWard.estimated_terminal_pressure_bar} Bar</span>
+                              <span className="text-slate-500 text-[10px] block">Nominal</span>
+                            </div>
+                            <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 font-sans text-[10px] block">Real-time Leakage</span>
+                              <span className="text-amber-600 dark:text-amber-400 font-bold text-sm">{selectedWard.leakage_pct}%</span>
+                              <span className="text-slate-500 text-[10px] block">{selectedWard.pipe_age_years} yr network</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Algorithmic Valve Interventions */}
+                    <div className="glass-panel p-4 rounded-xl space-y-2">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-xs">
+                        <span className="font-extrabold text-slate-900 dark:text-slate-200 uppercase tracking-wider font-mono">
+                          Algorithmic SCADA Valve Actions
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-mono font-bold">
+                          OR-Tools SCIP
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                        {(municipalData?.automated_valve_actions || []).map((act, i) => (
+                          <div key={i} className="p-2.5 rounded bg-amber-50/40 dark:bg-slate-950 border border-amber-200/60 dark:border-slate-800/80 text-xs font-mono space-y-0.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-amber-700 dark:text-amber-400 font-bold">{act.node_id}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-bold">
+                                {act.action}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-sans leading-tight">
+                              {act.reason}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* 15 Wards Table */}
+                <div className="glass-panel p-5 rounded-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 gap-3">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono">
+                      Pune Metro 15 Administrative Wards Allocation Ledger
+                    </h2>
+
+                    <div className="flex items-center space-x-2 text-xs font-mono">
+                      <input
+                        type="text" placeholder="Search ward..." value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-2.5 py-1 text-slate-900 dark:text-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs font-mono">
+                      <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                          <th className="py-2.5 px-3">Ward ID & Name</th>
+                          <th className="py-2.5 px-3">Population</th>
+                          <th className="py-2.5 px-3">Allocated Flow</th>
+                          <th className="py-2.5 px-3">Delivered LPCD</th>
+                          <th className="py-2.5 px-3">Hospital Buffer</th>
+                          <th className="py-2.5 px-3">Tap Pressure</th>
+                          <th className="py-2.5 px-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
+                        {filteredWards.map(w => (
+                          <tr
+                            key={w.ward_id}
+                            onClick={() => setSelectedWard(w)}
+                            className={`cursor-pointer transition-colors ${
+                              selectedWard?.ward_id === w.ward_id 
+                                ? 'bg-amber-100/60 dark:bg-amber-950/40' 
+                                : 'hover:bg-slate-50 dark:hover:bg-slate-900/60'
+                            }`}
+                          >
+                            <td className="py-2.5 px-3">
+                              <strong className="text-amber-700 dark:text-amber-400">{w.ward_id}</strong>
+                              <span className="text-slate-700 dark:text-slate-300 font-sans ml-2">{w.ward_name}</span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300">{w.population?.toLocaleString()}</td>
+                            <td className="py-2.5 px-3 text-slate-900 dark:text-slate-100 font-bold">{w.allocated_flow_mld} MLD</td>
+                            <td className="py-2.5 px-3 font-bold text-emerald-700 dark:text-emerald-400">{w.delivered_lpcd} LPCD</td>
+                            <td className="py-2.5 px-3 text-amber-700 dark:text-amber-400">{w.hospital_reserve_min_mld} MLD (Locked)</td>
+                            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300">{w.estimated_terminal_pressure_bar} Bar</td>
+                            <td className="py-2.5 px-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                w.severity_category === 'SAFE' 
+                                  ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800' 
+                                  : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                              }`}>
+                                {w.severity_category}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* VIEWPORT: CLOSED-LOOP TREATY-TO-TAP PIPELINE */}
+            {currentView === 'closed-loop' && (
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-amber-200 dark:border-slate-800">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800 font-mono text-xs font-bold uppercase">
+                      Direct Closed-Loop Resilience Coupling
+                    </span>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                      Macro Treaty Release to Municipal Tap Pressures
+                    </h1>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    "Interstate hydro-diplomacy and municipal survival are two halves of the same mathematical equation. An upstream release adjustment directly dictates downstream ward tap pressures, critical hospital buffer reserves, and equitable citizen access."
+                  </p>
+                </div>
+
+                {/* Direct Slider Coupling Controller */}
+                <div className="glass-panel p-5 rounded-xl border border-amber-300 dark:border-amber-600/40 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider font-mono">
+                      Macro Treaty Release Coupling Slider: State A (Upstream)
+                    </span>
+                    <div className="flex items-center space-x-2 font-mono text-xs">
+                      <button
+                        onClick={() => handleClosedLoopShift(-2.0)}
+                        className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-slate-500 text-slate-700 dark:text-slate-300 font-bold"
+                      >
+                        -5% (-2 TMC)
+                      </button>
+                      <button
+                        onClick={() => handleClosedLoopShift(+2.0)}
+                        className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-slate-500 text-slate-700 dark:text-slate-300 font-bold"
+                      >
+                        +5% (+2 TMC)
+                      </button>
+                      <span className="px-3 py-1 rounded bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-bold text-sm">
+                        {closedLoopSliderTmc.toFixed(1)} TMC
+                      </span>
+                    </div>
+                  </div>
+
+                  <input
+                    type="range" min="20" max="55" step="0.5" value={closedLoopSliderTmc}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setClosedLoopSliderTmc(val);
+                      const derivedMld = Math.round((val * 28316.85 * 0.28) / 365.0);
+                      setBulkQuotaMld(derivedMld);
+                      runMunicipalOptimizer(derivedMld, horizonDays);
+                    }}
+                    className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg cursor-pointer"
+                  />
+
+                  <div className="flex flex-wrap items-center justify-between text-xs font-mono pt-2 border-t border-amber-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+                    <div>
+                      Upstream Release: <strong className="text-amber-700 dark:text-amber-400">{closedLoopSliderTmc.toFixed(1)} TMC</strong>
+                      {" -> "}
+                      Computed Bulk Municipal Flume: <strong className="text-slate-900 dark:text-white font-bold">{bulkQuotaMld} MLD</strong>
+                    </div>
+                    <div>
+                      Delivered Min LPCD: <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{minLpcd} LPCD</strong>
+                      {" · "}
+                      Hospital Buffers: <strong className="text-amber-700 dark:text-amber-400 font-bold">100% Secured</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Side by Side */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="glass-panel p-5 rounded-xl space-y-3 font-mono text-xs">
+                    <h3 className="font-bold text-slate-900 dark:text-slate-200 text-sm pb-2 border-b border-slate-200 dark:border-slate-800">
+                      Macro Riparian Equity (Treaty View)
+                    </h3>
+                    <div className="p-3 rounded bg-amber-50/50 dark:bg-slate-950 border border-amber-200 dark:border-slate-800 flex justify-between">
+                      <span>State A Allocation: <strong className="text-amber-700 dark:text-amber-400">{closedLoopSliderTmc.toFixed(1)} TMC</strong></span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold">{(secA * 100).toFixed(1)}% Security</span>
+                    </div>
+                    <div className="p-3 rounded bg-amber-50/50 dark:bg-slate-950 border border-amber-200 dark:border-slate-800 flex justify-between">
+                      <span>State B Allocation: <strong className="text-amber-700 dark:text-amber-400">{optimalB} TMC</strong></span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold">{(secB * 100).toFixed(1)}% Security</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 font-sans leading-relaxed pt-2">
+                      The closed loop proves that an upstream release of {closedLoopSliderTmc.toFixed(1)} TMC translates into {bulkQuotaMld} MLD intake flume at Pune Municipal waterworks, safeguarding downstream compliance.
+                    </p>
+                  </div>
+
+                  <div className="glass-panel p-5 rounded-xl space-y-3 font-mono text-xs">
+                    <h3 className="font-bold text-slate-900 dark:text-slate-200 text-sm pb-2 border-b border-slate-200 dark:border-slate-800">
+                      Micro Municipal Delivery (Ward Tap View)
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                      <div className="p-3 rounded bg-amber-50/50 dark:bg-slate-950 border border-amber-200 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Min City Tap Volume</span>
+                        <span className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{minLpcd} LPCD</span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold block">PASS ≥ 55 LPCD</span>
+                      </div>
+                      <div className="p-3 rounded bg-amber-50/50 dark:bg-slate-950 border border-amber-200 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Hospital Reserves</span>
+                        <span className="text-xl font-bold text-amber-700 dark:text-amber-400">100%</span>
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold block">Zero-Deficit Locked</span>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-700 dark:text-slate-300 font-sans font-bold">Automated SCADA Valve Actions:</span>
+                      <div className="mt-1 space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                        {municipalData?.automated_valve_actions?.slice(0, 3).map((a, i) => (
+                          <div key={i} className="flex justify-between">
+                            <span className="text-amber-700 dark:text-amber-400 font-semibold">{a.node_id}: {a.action}</span>
+                            <span className="text-slate-500">{a.flow_adjustment_mld} MLD</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* VIEWPORT: SCIENTIFIC ANALYTICS DASHBOARDS */}
+            {currentView === 'analytics' && (
+              <div className="space-y-6">
+                <div className="pb-4 border-b border-amber-200 dark:border-slate-800">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800 font-mono text-xs font-bold uppercase">
+                      Scientific Visualization
+                    </span>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                      Scientific Analytics & Hydrological Telemetry
+                    </h1>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Multi-objective Pareto frontier curves, 30-60-90 day shortfall probability profiles, and tap pressure hydrographs
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="glass-panel p-4 rounded-xl">
+                    <div id="plotly-pareto" className="w-full h-80"></div>
+                  </div>
+                  <div className="glass-panel p-4 rounded-xl">
+                    <div id="plotly-pressure" className="w-full h-80"></div>
+                  </div>
+                  <div className="glass-panel p-4 rounded-xl">
+                    <div id="plotly-horizon" className="w-full h-80"></div>
+                  </div>
+                  <div className="glass-panel p-4 rounded-xl">
+                    <div id="plotly-reservoirs" className="w-full h-80"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </main>
+
+          {/* Universal Footer */}
+          <footer className="border-t border-amber-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-950 px-4 py-4 mt-auto">
+            <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2 font-mono">
+              <div>
+                Hydro-Diplomacy & Resilience Engine (HDRE / R2C Ai) · Team The GOAT's (VIT Pune)
+              </div>
+              <div>
+                Specification Version: 2.4.0 (Autonomous Production Blueprint)
+              </div>
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // Mount React App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

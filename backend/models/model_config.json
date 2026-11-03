@@ -1,0 +1,87 @@
+{
+  "features": [
+    "ward_id_code",
+    "month",
+    "season_id",
+    "population",
+    "growth_rate",
+    "baseline_lpcd",
+    "elevation_head_m",
+    "pipe_age_years",
+    "slum_pop_ratio",
+    "hospital_beds_count",
+    "esr_capacity_kl",
+    "temp_max_c",
+    "temp_min_c",
+    "humidity_pct",
+    "rainfall_mm",
+    "soil_moisture_idx",
+    "temp_max_lag_14d",
+    "temp_anomaly",
+    "precip_deficit_30d",
+    "inlet_flow_mld",
+    "inlet_flow_lag_7d",
+    "terminal_pressure_bar",
+    "estimated_leakage_pct",
+    "private_tanker_trips",
+    "historic_unmet_ratio"
+  ],
+  "ward_mapping": {
+    "WARD_01": 0,
+    "WARD_02": 1,
+    "WARD_03": 2,
+    "WARD_04": 3,
+    "WARD_05": 4,
+    "WARD_06": 5,
+    "WARD_07": 6,
+    "WARD_08": 7,
+    "WARD_09": 8,
+    "WARD_10": 9,
+    "WARD_11": 10,
+    "WARD_12": 11,
+    "WARD_13": 12,
+    "WARD_14": 13,
+    "WARD_15": 14
+  },
+  "hyperparameters": {
+    "n_estimators": 450,
+    "max_depth": 6,
+    "learning_rate": 0.03,
+    "subsample": 0.85,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "objective": "reg:squarederror",
+    "tree_method": "hist",
+    "random_state": 42
+  },
+  "metrics": {
+    "30d": {
+      "horizon_days": 30,
+      "target": "target_unmet_demand_ratio_30d",
+      "test_rmse": 0.0478,
+      "test_mae": 0.0403,
+      "test_r2": 0.6224,
+      "sample_count": 15975,
+      "model_path": "C:\\Users\\9br24\\.gemini\\antigravity\\scratch\\hdre-project\\backend\\models\\xgboost_30d.json"
+    },
+    "60d": {
+      "horizon_days": 60,
+      "target": "target_unmet_demand_ratio_60d",
+      "test_rmse": 0.0477,
+      "test_mae": 0.0401,
+      "test_r2": 0.636,
+      "sample_count": 15525,
+      "model_path": "C:\\Users\\9br24\\.gemini\\antigravity\\scratch\\hdre-project\\backend\\models\\xgboost_60d.json"
+    },
+    "90d": {
+      "horizon_days": 90,
+      "target": "target_unmet_demand_ratio_90d",
+      "test_rmse": 0.0474,
+      "test_mae": 0.0396,
+      "test_r2": 0.6308,
+      "sample_count": 15075,
+      "model_path": "C:\\Users\\9br24\\.gemini\\antigravity\\scratch\\hdre-project\\backend\\models\\xgboost_90d.json"
+    }
+  }
+}
