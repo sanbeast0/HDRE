@@ -144,3 +144,31 @@ class TreatyToTapResponse(BaseModel):
     macro_treaty: TreatySimulateResponse
     micro_municipal: MunicipalOptimizeResponse
     closed_loop_narrative: str
+
+# ------------------------------------------------------------------------------
+# NEW FRONTEND INTEGRATION SCHEMAS
+# ------------------------------------------------------------------------------
+
+class ShockInputsModel(BaseModel):
+    rainfall: float = Field(default=0.0, description="Rainfall anomaly shock in % (-50% to +30%)")
+    temperature: float = Field(default=2.0, description="Temperature surge in °C (0 to 4°C)")
+    releaseCut: float = Field(default=0.0, description="Upstream release cut in % (0 to 30%)")
+    populationSurge: float = Field(default=0.0, description="Population surge in % (0 to 20%)")
+
+class MacroSimulateInput(BaseModel):
+    ratio: float = Field(default=55.0, description="Sharing ratio (Region A percentage)")
+    shocks: ShockInputsModel = Field(default_factory=ShockInputsModel)
+
+class MicroSimulateInput(BaseModel):
+    quota: float = Field(default=850.0, description="Bulk municipal intake quota in MLD")
+    shocks: ShockInputsModel = Field(default_factory=ShockInputsModel)
+
+class WardRiskModel(BaseModel):
+    name: str
+    deficit: int
+    tier: str
+    supplyHours: int
+    deliveredLpcd: float = 55.0
+    hospitalBeds: int = 200
+    values: List[int] = Field(default_factory=list)
+
